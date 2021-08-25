@@ -1,6 +1,3 @@
-//巡线程序 
-//20210825
-
 #include "SunConfig.h"
 
 #include "I2Cdev.h"
@@ -18,6 +15,8 @@ Grayscale GraySensors;
 Kinematics kinematics(MAX_RPM, WHEEL_DIAMETER, 
                         FR_WHEELS_DISTANCE,
                         LR_WHEELS_DISTANCE);
+//新建小车里程计实例
+WheelOdometry botOdometry(&kinematics);
 //新建小车电机实例
 A4950MotorShield motors;
 //新建小车编码器实例
@@ -39,11 +38,12 @@ float linear_vel_x = 0;   // m/s
 float linear_vel_y = 0;   // m/s
 float angular_vel_z = 0;  // rad/s
 unsigned long previousMillis = 0;   // will store last time run
-const long period = 5000;   // period at which to run in ms
+const long period = 3000;   // period at which to run in ms
 
 //运行状态标记
-enum CARDIRECTION { PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD };
-enum CARDIRECTION direction = PAUSE;
+//enum CARDIRECTION { PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD };
+//enum CARDIRECTION direction = PAUSE;
+int direction = 0;
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -57,6 +57,7 @@ Quaternion q;   // [w, x, y, z]         quaternion container
 VectorFloat gravity;    // [x, y, z]            gravity vector
 float ypr[3];   // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
+//运动学输出量的结构体
 Kinematics::output pluses;
 //uart输出量的结构体
 Grayscale::strOutput GraySensorsUartIoOutput;
@@ -82,6 +83,10 @@ void control()
     newPulses[2] = ENC[2].read();   // C
     newPulses[3] = -ENC[3].read();  // D
 #endif
+
+    //里程计更新
+    botOdometry.getPositon_mm(newPulses[0], newPulses[1], newPulses[2],
+                            newPulses[3], ypr[0]);
 
     for (int i = 0; i < WHEEL_NUM; i++) {
     outPWM[i] = VeloPID[i].Compute(targetPulses[i], (float)newPulses[i]);
@@ -115,31 +120,22 @@ void setup()
     mpu.CalibrateGyro(6);
 
     uint8_t AOffsetRegister = (mpu.getDeviceID() < 0x38 )? 0x06: 0x77;
-	  if(AOffsetRegister == 0x06)	I2Cdev::readWords(0x68, AOffsetRegister, 3, (int *)TheOffsets);
-	  else 
-	  {
-		    I2Cdev::readWords(0x68, AOffsetRegister, 1, (int *)TheOffsets);
-		    I2Cdev::readWords(0x68, AOffsetRegister+3, 1, (int *)TheOffsets+1);
-		    I2Cdev::readWords(0x68, AOffsetRegister+6, 1, (int *)TheOffsets+2);
-	  }
-	  //	A_OFFSET_H_READ_A_OFFS(Data);
+    if(AOffsetRegister == 0x06) I2Cdev::readWords(0x68, AOffsetRegister, 3, (int *)TheOffsets);
+    else 
+    {
+        I2Cdev::readWords(0x68, AOffsetRegister, 1, (int *)TheOffsets);
+        I2Cdev::readWords(0x68, AOffsetRegister+3, 1, (int *)TheOffsets+1);
+        I2Cdev::readWords(0x68, AOffsetRegister+6, 1, (int *)TheOffsets+2);
+    }
+    //  A_OFFSET_H_READ_A_OFFS(Data);
     mpu.setXAccelOffset(TheOffsets[0]);
     mpu.setYAccelOffset(TheOffsets[1]);
     mpu.setZAccelOffset(TheOffsets[2]);
-	  I2Cdev::readWords(0x68, 0x13, 3, (int *)TheOffsets+3);
-	  //	XG_OFFSET_H_READ_OFFS_USR(Data);
+    I2Cdev::readWords(0x68, 0x13, 3, (int *)TheOffsets+3);
+    //  XG_OFFSET_H_READ_OFFS_USR(Data);
     mpu.setXGyroOffset(TheOffsets[3]);
     mpu.setYGyroOffset(TheOffsets[4]);
     mpu.setZGyroOffset(TheOffsets[5]);
-
-    /*
-    mpu.setXAccelOffset(-2140);
-    mpu.setYAccelOffset(-774);
-    mpu.setZAccelOffset(1248);
-    mpu.setXGyroOffset(46);
-    mpu.setYGyroOffset(28);
-    mpu.setZGyroOffset(-18);
-    */
 
     if (devStatus == 0) 
     {
@@ -162,12 +158,17 @@ void loop()
     if (!dmpReady) return;
     unsigned long currentMillis = millis();   // store the current time
     GraySensorsUartIoOutput = GraySensors.readUart();  //读取串口数字量数据
+
+    //灰度传感器修正里程计
+    if(GraySensorsUartIoOutput.offset == 0)
+        botOdometry.botPosition.position_y = round((botOdometry.botPosition.position_y - 150) / 300) * 300 + 150;
+    if(GraySensorsUartIoOutput.ioCount == 7)
+        botOdometry.botPosition.position_x = round((botOdometry.botPosition.position_x) / 300) * 300;
+    
     //使用有限状态机方式
-    // simulated required velocities
-    // PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD
     switch (direction) 
     {
-    case PAUSE:           //停止
+    case 0:           //停止
         linear_vel_x = 0;   // m/s
         linear_vel_y = 0;   // m/s
         //angular_vel_z = 0;  // rad/s
@@ -175,33 +176,53 @@ void loop()
         if (currentMillis - previousMillis >= period) 
         {
             previousMillis = currentMillis;
-            direction = FORWARD;
+            direction++;
         }
         break;
-    case FORWARD:          //前进
+    case 1:             //左进
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0.2;   // m/s
+        if (botOdometry.botPosition.position_y >= 450) 
+        {
+            previousMillis = currentMillis;
+            direction++;
+        }
+        break;
+    case 2:          //前进
         linear_vel_x = 0.2;  // m/s
         if (GraySensorsUartIoOutput.ioCount) 
         {
             linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
         }                   // m/s
         //angular_vel_z = 0;  // rad/s
-        if (currentMillis - previousMillis >= (2 * period)) 
+        if (botOdometry.botPosition.position_x >= 600) 
         {
             previousMillis = currentMillis;
-            direction = BACKWARD;
+            direction++;
         }
         break;
-    case BACKWARD:          //后退
-        linear_vel_x = -0.2;  // m/s
-        if (GraySensorsUartIoOutput.ioCount) 
-        {
-            linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset; // m/s
-        }                  
+    case 3:           //停止
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0;   // m/s
         //angular_vel_z = 0;  // rad/s
-        if (currentMillis - previousMillis >= (2 * period)) 
+        //使用millis函数进行定时控制，代替delay函数
+        if (currentMillis - previousMillis >= period) 
         {
             previousMillis = currentMillis;
-            direction = PAUSE;
+            direction++;
+        }
+        break;
+    case 4:          //前进
+        linear_vel_x = 0.2;  // m/s
+        if (GraySensorsUartIoOutput.ioCount) 
+        {
+            linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
+        }                   // m/s
+        //angular_vel_z = 0;  // rad/s
+        if (botOdometry.botPosition.position_x >= 1350) 
+        {
+            previousMillis = currentMillis;
+            direction++;
         }
         break;
     default:              //停止
@@ -211,7 +232,6 @@ void loop()
         if (currentMillis - previousMillis >= period) 
         {
             previousMillis = currentMillis;
-            direction = PAUSE;
         }
         break;
     }
@@ -226,4 +246,8 @@ void loop()
     }
 
     pluses = kinematics.getPulses(linear_vel_x, linear_vel_y, angular_vel_z);
+
+    Serial.print(botOdometry.botPosition.position_x);
+    Serial.print(" ");
+    Serial.println(botOdometry.botPosition.position_y);
 }
