@@ -34,15 +34,16 @@ PID VeloPID[4] = {PID(PWM_MIN, PWM_MAX, Kp, Ki, Kd),
                 PID(PWM_MIN, PWM_MAX, Kp, Ki, Kd),
                 PID(PWM_MIN, PWM_MAX, Kp, Ki, Kd), 
                 PID(PWM_MIN, PWM_MAX, Kp, Ki, Kd)};
-//新建小车偏移量PID实例
-PID OffsetPID = PID(-999, 999, Kp, Ki, Kd);
 
-float linear_vel_x = 0.1;   // m/s
+float linear_vel_x = 0;   // m/s
 float linear_vel_y = 0;   // m/s
 float angular_vel_z = 0;  // m/s
-float previous_offset = 0; //前一次灰度传感器测得的偏移量
-float now_offset = 0; //当前灰度传感器测得的偏移量
-float offset_after_pid = 0; //经过PID后的偏移量
+unsigned long previousMillis = 0;   // will store last time run
+const long period = 5000;   // period at which to run in ms
+
+//运行状态标记
+enum CARDIRECTION { PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD };
+enum CARDIRECTION direction = PAUSE;
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -63,18 +64,6 @@ Grayscale::strOutput GraySensorsUartIoOutput;
 void control()
 {
     sei();  //全局中断开启
-
-    float offset;
-    GraySensorsUartIoOutput = GraySensors.readUart();   //读取串口数字量数据
-    Serial.println(GraySensorsUartIoOutput.offset);
-    now_offset = GraySensorsUartIoOutput.offset;
-    if(now_offset == previous_offset)
-        offset = offset_after_pid;
-    else
-        offset = now_offset;
-    
-    linear_vel_y = (offset - OffsetPID.Compute(0, offset)) / (2 * TIMER_PERIOD) * 1000;
-    pluses = kinematics.getPulses(linear_vel_x, linear_vel_y, angular_vel_z);
 
     targetPulses[0] = pluses.motor1;
     targetPulses[1] = pluses.motor2;
@@ -141,6 +130,7 @@ void setup()
 
 void loop() 
 {
+    unsigned long currentMillis = millis();   // store the current time
     if (!dmpReady) return;
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) 
     { 
@@ -150,4 +140,59 @@ void loop()
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
         angular_vel_z=ypr[0]*5;
     }
+    GraySensorsUartIoOutput = GraySensors.readUart();  //读取串口数字量数据
+    //使用有限状态机方式
+    // simulated required velocities
+    // PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD
+    switch (direction) 
+    {
+    case PAUSE:           //停止
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0;   // m/s
+        //angular_vel_z = 0;  // rad/s
+        //使用millis函数进行定时控制，代替delay函数
+        if (currentMillis - previousMillis >= period) 
+        {
+            previousMillis = currentMillis;
+            direction = FORWARD;
+        }
+        break;
+    case FORWARD:          //前进
+        linear_vel_x = 0.2;  // m/s
+        if (GraySensorsUartIoOutput.ioCount) 
+        {
+            linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
+        }                   // m/s
+        //angular_vel_z = 0;  // rad/s
+        if (currentMillis - previousMillis >= (2 * period)) 
+        {
+            previousMillis = currentMillis;
+            direction = BACKWARD;
+        }
+        break;
+    case BACKWARD:          //后退
+        linear_vel_x = -0.2;  // m/s
+        if (GraySensorsUartIoOutput.ioCount) 
+        {
+            linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset; // m/s
+        }                  
+        //angular_vel_z = 0;  // rad/s
+        if (currentMillis - previousMillis >= (2 * period)) 
+        {
+            previousMillis = currentMillis;
+            direction = PAUSE;
+        }
+        break;
+    default:              //停止
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0;   // m/s
+        //angular_vel_z = 0;  // rad/s
+        if (currentMillis - previousMillis >= period) 
+        {
+            previousMillis = currentMillis;
+            direction = PAUSE;
+        }
+        break;
+    }
+    pluses = kinematics.getPulses(linear_vel_x, linear_vel_y, angular_vel_z);
 }
