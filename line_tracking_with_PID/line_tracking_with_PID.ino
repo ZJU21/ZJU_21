@@ -104,20 +104,44 @@ void setup()
     mpu.initialize();
     devStatus = mpu.dmpInitialize();
 
-    //先运行IMU_ZERO
+    //IMU_Zero
+    int TheOffsets[6] = {0};
+    mpu.CalibrateAccel(6);
+    mpu.CalibrateGyro(6);
+
+    uint8_t AOffsetRegister = (mpu.getDeviceID() < 0x38 )? 0x06: 0x77;
+	  if(AOffsetRegister == 0x06)	I2Cdev::readWords(0x68, AOffsetRegister, 3, (int *)TheOffsets);
+	  else 
+	  {
+		    I2Cdev::readWords(0x68, AOffsetRegister, 1, (int *)TheOffsets);
+		    I2Cdev::readWords(0x68, AOffsetRegister+3, 1, (int *)TheOffsets+1);
+		    I2Cdev::readWords(0x68, AOffsetRegister+6, 1, (int *)TheOffsets+2);
+	  }
+	  //	A_OFFSET_H_READ_A_OFFS(Data);
+    mpu.setXAccelOffset(TheOffsets[0]);
+    mpu.setYAccelOffset(TheOffsets[1]);
+    mpu.setZAccelOffset(TheOffsets[2]);
+	  I2Cdev::readWords(0x68, 0x13, 3, (int *)TheOffsets+3);
+	  //	XG_OFFSET_H_READ_OFFS_USR(Data);
+    mpu.setXGyroOffset(TheOffsets[3]);
+    mpu.setYGyroOffset(TheOffsets[4]);
+    mpu.setZGyroOffset(TheOffsets[5]);
+
+    /*
     mpu.setXAccelOffset(-2140);
     mpu.setYAccelOffset(-774);
     mpu.setZAccelOffset(1248);
     mpu.setXGyroOffset(46);
     mpu.setYGyroOffset(28);
     mpu.setZGyroOffset(-18);
+    */
 
     if (devStatus == 0) 
     {
         // Calibration Time: generate offsets and calibrate our MPU6050
-        mpu.CalibrateAccel(6);
-        mpu.CalibrateGyro(6);
-        mpu.PrintActiveOffsets();
+        // mpu.CalibrateAccel(6);
+        // mpu.CalibrateGyro(6);
+        // mpu.PrintActiveOffsets();
         mpu.setDMPEnabled(true);
         dmpReady = true;
         // get expected DMP packet size for later comparison
