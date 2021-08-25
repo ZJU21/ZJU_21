@@ -1,6 +1,6 @@
 //走矩形线路测试 位置环 里程计
 // 20210721更新
-// todo :显示调整 距离修正
+// todo :显示调整 距离修正 偏航角角度正负
 //#define USE_18TFT_LCD
 
 #ifdef USE_18TFT_LCD
@@ -29,7 +29,7 @@
 #define TFT_SDA 26
 #define TFT_SCL 28  // sck
 #define TFT_CS 24
-#define TFT_RST 25
+#define TFT_RST 23
 #define TFT_RS 22
 #endif
 #ifdef YUROBOT18TFT_QIYI  // YUROBOT深1.8 TFT 5V
@@ -58,6 +58,7 @@ UTFT myGLCD(TFT_Modle, TFT_SDA, TFT_SCL, TFT_CS, TFT_RST, TFT_RS);
 MPU6050 mpu;
 //#define DEBUG
 #define DEBUG_ODOM
+#define DEBUG_POSE
 /*
  Kinematics(int motor_max_rpm, float wheel_diameter, float fr_wheels_dist,
 float lr_wheels_dist, int pwm_bits);
@@ -74,9 +75,16 @@ Kinematics kinematics(MAX_RPM, WHEEL_DIAMETER, FR_WHEELS_DISTANCE,
 
 Kinematics::output rpm;
 Kinematics::output pluses;
-
+//新建小车轮式里程计实例
 WheelOdometry botOdometry(&kinematics);
-
+//新建小车位置环实例
+Car mecanumXbot(&botOdometry);
+//目标点结构体 X:mm Y:mm Z:弧度
+CAR_GOAL_POINT p0{0, 0, 0};
+CAR_GOAL_POINT p1{900, 900, 0};
+CAR_GOAL_POINT p2{900, 900, 1.57};
+//比例系数和速度最大值
+CAR_KPS_MAX botKps{0.01, 0.01, 5, 0.3, 0.3, 3};
 //新建小车电机实例
 A4950MotorShield motors;
 
@@ -98,11 +106,11 @@ float linear_vel_x = 0;            // m/s
 float linear_vel_y = 0;            // m/s
 float angular_vel_z = 0;           // rad/s
 unsigned long previousMillis = 0;  // will store last time run
-const long period = 5000;          // period at which to run in ms
+const long period = 6000;          // period at which to run in ms
 
 //运行状态标记
-enum CARDIRECTION { PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD };
-enum CARDIRECTION direction = PAUSE;
+enum CARDIRECTION { P0, P1, P2 };
+enum CARDIRECTION direction = P0;
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -135,8 +143,8 @@ void control() {
   targetPulses[1] = pluses.motor2;
   targetPulses[2] = pluses.motor3;
   targetPulses[3] = pluses.motor4;
-   //获取电机速度
 
+//获取电机速度
 #ifdef PINS_REVERSE
   newPulses[0] = -ENC[0].read();  // A
   newPulses[1] = ENC[1].read();   // B
@@ -188,12 +196,12 @@ void setup() {
 
   // supply your own gyro offsets here, scaled for min sensitivity
 
-  mpu.setXAccelOffset(-787);
-  mpu.setYAccelOffset(-881);
-  mpu.setZAccelOffset(1093);
-  mpu.setXGyroOffset(-255);
-  mpu.setYGyroOffset(-21);
-  mpu.setZGyroOffset(-28);
+  mpu.setXAccelOffset(1504);
+  mpu.setYAccelOffset(-1456);
+  mpu.setZAccelOffset(1222);
+  mpu.setXGyroOffset(437);
+  mpu.setYGyroOffset(-64);
+  mpu.setZGyroOffset(-67);
   // make sure it worked (returns 0 if so)
   if (devStatus == 0) {
     // Calibration Time: generate offsets and calibrate our MPU6050
@@ -248,64 +256,51 @@ void loop() {
     mpu.dmpGetGravity(&gravity, &q);
     mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
   }
-  //使用有限状态机方式走正方形
-  // simulated required velocities
-  // PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD
+
+  //
   switch (direction) {
-    case PAUSE:          //停止
-      linear_vel_x = 0;  // m/s
-      linear_vel_y = 0;  // m/s
+    case P0:          //停止
+mecanumXbot.getBotVel(p0, botKps);
+      linear_vel_x = mecanumXbot.botVel.vel_x;  // m/s
+      linear_vel_y = mecanumXbot.botVel.vel_y;  // m/s
       // angular_vel_z = 0;  // rad/s
-      angular_vel_z = ypr[0] * 5;
+      angular_vel_z = mecanumXbot.botVel.angular_vel_z;
       //使用millis函数进行定时控制，代替delay函数
       if (currentMillis - previousMillis >= period) {
         previousMillis = currentMillis;
-        direction = LEFTWARD;
+        direction = P1;
       }
       break;
-    case LEFTWARD:         //左进
-      linear_vel_x = 0;    // m/s
-      linear_vel_y = 0.2;  // m/s
-      angular_vel_z = ypr[0] * 5;
+    case P1:  //右转
+      mecanumXbot.getBotVel(p1, botKps);
+      linear_vel_x = mecanumXbot.botVel.vel_x;  // m/s
+      linear_vel_y = mecanumXbot.botVel.vel_y;  // m/s
+      // angular_vel_z = 0;  // rad/s
+      angular_vel_z = mecanumXbot.botVel.angular_vel_z;
       if (currentMillis - previousMillis >= period) {
         previousMillis = currentMillis;
-        direction = FORWARD;
+        direction = P2;
       }
       break;
-    case FORWARD:          //前进
-      linear_vel_x = 0.2;  // m/s
-      linear_vel_y = 0;    // m/s
-      angular_vel_z = ypr[0] * 5;
-      if (currentMillis - previousMillis >= (2 * period)) {
+    case P2:          //前进
+     mecanumXbot.getBotVel(p2, botKps);
+      linear_vel_x = mecanumXbot.botVel.vel_x;  // m/s
+      linear_vel_y = mecanumXbot.botVel.vel_y;  // m/s
+      // angular_vel_z = 0;  // rad/s
+      angular_vel_z = mecanumXbot.botVel.angular_vel_z;
+      if (currentMillis - previousMillis >= (period)) {
         previousMillis = currentMillis;
-        direction = RIGHTWARD;
+        direction = P0;
       }
       break;
-    case RIGHTWARD:         //右进
-      linear_vel_x = 0;     // m/s
-      linear_vel_y = -0.2;  // m/s
-      angular_vel_z = ypr[0] * 5;
-      if (currentMillis - previousMillis >= period) {
-        previousMillis = currentMillis;
-        direction = BACKWARD;
-      }
-      break;
-    case BACKWARD:          //后退
-      linear_vel_x = -0.2;  // m/s
-      linear_vel_y = 0;     // m/s
-      angular_vel_z = ypr[0] * 5;
-      if (currentMillis - previousMillis >= (2 * period)) {
-        previousMillis = currentMillis;
-        direction = PAUSE;
-      }
-      break;
+    
     default:             //停止
       linear_vel_x = 0;  // m/s
       linear_vel_y = 0;  // m/s
-      angular_vel_z = ypr[0] * 5;
+      angular_vel_z = 0;
       if (currentMillis - previousMillis >= period) {
         previousMillis = currentMillis;
-        direction = PAUSE;
+        direction =P0;
       }
       break;
   }
@@ -331,7 +326,16 @@ void loop() {
   myGLCD.printNumF(botOdometry.botPosition.heading_theta, 2, LEFT, 110);
   myGLCD.printNumI(millis(), LEFT, 140);
 #endif
-
+#ifdef DEBUG_POSE
+  Serial.print(" X: ");
+  Serial.print(mecanumXbot.botVel.vel_x);
+  Serial.print(",");
+  Serial.print("Y: ");
+  Serial.print(mecanumXbot.botVel.vel_y);
+  Serial.print(",");
+  Serial.print(" Z: ");
+  Serial.println(mecanumXbot.botVel.angular_vel_z);
+#endif
 #ifdef DEBUG_ODOM
   Serial.print(" X: ");
   Serial.print(botOdometry.botPosition.position_x);
