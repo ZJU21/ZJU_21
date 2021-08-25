@@ -67,7 +67,7 @@ class Car {
 
   // 获得世界坐标系下的速度
   void getWorldVel(CAR_GOAL_POINT goalPoint,CAR_KPS_MAX carKps);
-  //
+  //获得附体坐标系下的速度
   void getBotVel(CAR_GOAL_POINT goalPoint,CAR_KPS_MAX carKps);
 
  private:

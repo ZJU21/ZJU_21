@@ -129,11 +129,21 @@ void control() {
   targetPulses[2] = pluses.motor3;
   targetPulses[3] = pluses.motor4;
   //获取电机速度
+    //获取电机速度
 
+#ifdef PINS_REVERSE
+  newPulses[0] = -ENC[0].read();  // A
+  newPulses[1] = ENC[1].read();   // B
+  newPulses[2] = -ENC[2].read();  // C
+  newPulses[3] = ENC[3].read();   // D
+#else
   newPulses[0] = ENC[0].read();   // A 1
   newPulses[1] = -ENC[1].read();  // B 2
   newPulses[2] = ENC[2].read();   // C 3
   newPulses[3] = -ENC[3].read();  // D 4
+#endif
+
+
 
   //里程计更新
   // botOdometry.getPositon_mm(newPulses[0], newPulses[1], newPulses[2],

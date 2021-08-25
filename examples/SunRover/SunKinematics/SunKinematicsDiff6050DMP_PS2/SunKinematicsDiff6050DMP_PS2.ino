@@ -66,10 +66,17 @@ void control() {
   targetPulses[3] = pluses.motor4;
   //获取电机速度
 
+#ifdef PINS_REVERSE
+  newPulses[0] = -ENC[0].read();  // A
+  newPulses[1] = ENC[1].read();   // B
+  newPulses[2] = -ENC[2].read();  // C
+  newPulses[3] = ENC[3].read();   // D
+#else
   newPulses[0] = ENC[0].read();   // A
   newPulses[1] = -ENC[1].read();  // B
   newPulses[2] = ENC[2].read();   // C
   newPulses[3] = -ENC[3].read();  // D
+#endif
 
   for (int i = 0; i < WHEEL_NUM; i++) {
     outPWM[i] = VeloPID[i].Compute(targetPulses[i], (float)newPulses[i]);
