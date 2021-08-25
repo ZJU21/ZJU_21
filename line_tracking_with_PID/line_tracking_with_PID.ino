@@ -148,6 +148,10 @@ void setup()
         packetSize = mpu.dmpGetFIFOPacketSize();
     }
 
+    //一键启动
+    pinMode(42, INPUT_PULLUP);
+    while(digitalRead(42)){}
+
     FlexiTimer2::set(TIMER_PERIOD, control);  //定时中断函数，TIMER_PERIOD为宏定义
     FlexiTimer2::start();
 }
