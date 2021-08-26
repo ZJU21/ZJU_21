@@ -1,6 +1,7 @@
 /************************************
  * 2021-08-26 by csr
  ************************************/
+
 #ifndef _VEHICLE_H
 #define _VEHICLE_H
 #include "SunConfig.h"
@@ -10,6 +11,9 @@
 #include "Wire.h"
 #endif
 #include <FlexiTimer2.h>  //定时中断
+
+//#define TestMode1 // 关闭灰度传感器巡线和里程计纠正
+//#define CloseBrake // 关闭急停
 
 const float grid_size=300;
 
@@ -213,11 +217,11 @@ void Vehicle::run()
 	switch (now_command->typ)
 	{
 		case PAUSE:           //停止
-			//motors.motorsBrake();
+#ifndef CloseBrake
+			motors.motorsBrake();
+#endif
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s
-			//angular_vel_z = 0;  // rad/s
-			//使用millis函数进行定时控制，代替delay函数
 			if (currentMillis - previousMillis >= now_command->len) 
 				next_command();
 			break;
@@ -236,31 +240,35 @@ void Vehicle::run()
 		case FORWARD:          //前进
 			linear_vel_x = 0.2;  // m/s
 			if (GraySensorsUartIoOutput.ioCount) 
-			{
-				linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
-			}                   // m/s
-			//angular_vel_z = 0;  // rad/s
+				linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;		// m/s
+#ifdef TestMode1
+			linear_vel_y=0
+#endif
 			if (current_x - previous_x >= now_command->len*grid_size)
 				next_command();
 			break;
 		case BACKWARD:          //后退
 			linear_vel_x = -0.2;  // m/s
 			if (GraySensorsUartIoOutput.ioCount) 
-			{
-				linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
-			}                   // m/s
-			//angular_vel_z = 0;  // rad/s
+				linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;		// m/s
+#ifdef TestMode1
+			linear_vel_y=0
+#endif
 			if (current_x - previous_x <= -now_command->len*grid_size)
 				next_command();
 			break;
 		case START:             //开始
-			//motors.motorsBrake();
+#ifndef CloseBrake
+			motors.motorsBrake();
+#endif
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s
 			angular_vel_z = 0;  // rad/s
 			next_command();
 		case END:             //结束
-			//motors.motorsBrake();
+#ifndef CloseBrake
+			motors.motorsBrake();
+#endif
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s
 			angular_vel_z = 0;  // rad/s
