@@ -11,12 +11,6 @@ const float start_x=10,start_y=150; // 设置初始位置，分别表示从起�
 //   LEFTWARD/RIGHTWARD/BACKWARD/FORWARD: 向左/右/后/前走若干格
 //   PAUSE: 暂停若干秒
 COMMAND commands[]={
-	{START,0},
-	{FORWARD,2},
-	{PAUSE,1000},
-	{BACKWARD,2},
-	{END,0}};
-	/*
 	{LEFTWARD,0.3},
 	{FORWARD,1.8},
 	{PAUSE,3000}, // 扫码
@@ -32,7 +26,6 @@ COMMAND commands[]={
 	{RIGHTWARD,1.4},
 	{END,0}
 };
-*/
 
 Vehicle vehicle;
 
