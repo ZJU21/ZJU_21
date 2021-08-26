@@ -41,8 +41,9 @@ unsigned long previousMillis = 0;   // will store last time run
 const long period = 3000;   // period at which to run in ms
 
 //运行状态标记
-enum CARDIRECTION { PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD, START, END };
-enum CARDIRECTION direction = PAUSE;
+//enum CARDIRECTION { PAUSE, LEFTWARD, FORWARD, RIGHTWARD, BACKWARD };
+//enum CARDIRECTION direction = PAUSE;
+int direction = 0;
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -152,26 +153,6 @@ void setup()
     FlexiTimer2::start();
 }
 
-float grid_size=300;
-int now_step=0;
-float previous_x=0,previous_y=0;
-struct step
-{
-    float len;
-    enum CARDIRECTION direction;
-}goal[]={{0,START},
-         {1.5,LEFTWARD},
-         {2,FORWARD},
-         {0,PAUSE},//扫码
-         {2.5,FORWARD},
-         {0.2,RIGHTWARD},
-         {0,PAUSE},//夹取物料A
-         {0.2,LEFTWARD},
-         {1,FORWARD},
-         {2,LEFTWARD},
-         {0,PAUSE},//夹取物料B
-         {2,BACKWARD},
-         {0,END}};
 void loop() 
 {
     if (!dmpReady) return;
@@ -179,78 +160,80 @@ void loop()
     GraySensorsUartIoOutput = GraySensors.readUart();  //读取串口数字量数据
 
     //灰度传感器修正里程计
-    //(300,150)为出发点灰度传处感器坐标
     if(GraySensorsUartIoOutput.offset == 0)
         botOdometry.botPosition.position_y = round((botOdometry.botPosition.position_y - 150) / 300) * 300 + 150;
     if(GraySensorsUartIoOutput.ioCount == 7)
-        botOdometry.botPosition.position_x = round((botOdometry.botPosition.position_x - 300) / 300) * 300 + 300;
+        botOdometry.botPosition.position_x = round((botOdometry.botPosition.position_x) / 300) * 300;
     
     //使用有限状态机方式
-    bool flag=false;
     switch (direction) 
     {
-        case PAUSE:           //停止
-            linear_vel_x = 0;   // m/s
-            linear_vel_y = 0;   // m/s
-            //angular_vel_z = 0;  // rad/s
-            //使用millis函数进行定时控制，代替delay函数
-            if (currentMillis - previousMillis >= period) 
-                flag=true;
-            break;
-        case LEFTWARD:             //左进
-            linear_vel_x = 0;   // m/s
-            linear_vel_y = 0.2;   // m/s
-            if (botOdometry.botPosition.position_y - previous_y >= goal[now_step].len*grid_size) 
-                flag=true;
-            break;
-        case RIGHTWARD:             //右进
-            linear_vel_x = 0;   // m/s
-            linear_vel_y = -0.2;   // m/s
-            if (botOdometry.botPosition.position_y - previous_y <= -goal[now_step].len*grid_size) 
-                flag=true;
-            break;
-        case FORWARD:          //前进
-            linear_vel_x = 0.2;  // m/s
-            if (GraySensorsUartIoOutput.ioCount) 
-            {
-                linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
-            }                   // m/s
-            //angular_vel_z = 0;  // rad/s
-            if (botOdometry.botPosition.position_x - previous_x >= goal[now_step].len*grid_size)
-                flag=true;
-            break;
-        case BACKWARD:          //后退
-            linear_vel_x = -0.2;  // m/s
-            if (GraySensorsUartIoOutput.ioCount) 
-            {
-                linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
-            }                   // m/s
-            //angular_vel_z = 0;  // rad/s
-            if (botOdometry.botPosition.position_x - previous_x <= -goal[now_step].len*grid_size)
-                flag=true;
-            break;
-        case START:             //结束
-            linear_vel_x = 0;   // m/s
-            linear_vel_y = 0;   // m/s
-            angular_vel_z = 0;  // rad/s
-            flag=true;
-        case END:             //结束
-            linear_vel_x = 0;   // m/s
-            linear_vel_y = 0;   // m/s
-            angular_vel_z = 0;  // rad/s
-        default:              //停止
-            linear_vel_x = 0;   // m/s
-            linear_vel_y = 0;   // m/s
-            angular_vel_z = 0;  // rad/s
-            break;
-    }
-    if (flag)
-    {
-        now_step++;
-        direction=goal[now_step].direction;
-        previous_x=botOdometry.botPosition.position_x;
-        previous_y=botOdometry.botPosition.position_y;
-        previousMillis = currentMillis;
+    case 0:           //停止
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0;   // m/s
+        //angular_vel_z = 0;  // rad/s
+        //使用millis函数进行定时控制，代替delay函数
+        if (currentMillis - previousMillis >= period) 
+        {
+            previousMillis = currentMillis;
+            direction++;
+        }
+        break;
+    case 1:             //左进
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0.2;   // m/s
+        if (botOdometry.botPosition.position_y >= 450) 
+        {
+            previousMillis = currentMillis;
+            direction++;
+        }
+        break;
+    case 2:          //前进
+        linear_vel_x = 0.2;  // m/s
+        if (GraySensorsUartIoOutput.ioCount) 
+        {
+            linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
+        }                   // m/s
+        //angular_vel_z = 0;  // rad/s
+        if (botOdometry.botPosition.position_x >= 600) 
+        {
+            previousMillis = currentMillis;
+            direction++;
+        }
+        break;
+    case 3:           //停止
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0;   // m/s
+        //angular_vel_z = 0;  // rad/s
+        //使用millis函数进行定时控制，代替delay函数
+        if (currentMillis - previousMillis >= period) 
+        {
+            previousMillis = currentMillis;
+            direction++;
+        }
+        break;
+    case 4:          //前进
+        linear_vel_x = 0.2;  // m/s
+        if (GraySensorsUartIoOutput.ioCount) 
+        {
+            linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;
+        }                   // m/s
+        //angular_vel_z = 0;  // rad/s
+        if (botOdometry.botPosition.position_x >= 1350) 
+        {
+            previousMillis = currentMillis;
+            direction++;
+        }
+        break;
+    default:              //停止
+        linear_vel_x = 0;   // m/s
+        linear_vel_y = 0;   // m/s
+        //angular_vel_z = 0;  // rad/s
+        if (currentMillis - previousMillis >= period) 
+        {
+            previousMillis = currentMillis;
+        }
+        break;
     }
 
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) 
@@ -264,12 +247,6 @@ void loop()
 
     pluses = kinematics.getPulses(linear_vel_x, linear_vel_y, angular_vel_z);
 
-    Serial.print(now_step);
-    Serial.print(" ");
-    Serial.print(previousMillis);
-    Serial.print(" ");
-    Serial.print(currentMillis);
-    Serial.print(" ");
     Serial.print(botOdometry.botPosition.position_x);
     Serial.print(" ");
     Serial.println(botOdometry.botPosition.position_y);
