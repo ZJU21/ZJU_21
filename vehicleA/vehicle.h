@@ -24,6 +24,7 @@ typedef enum
 	FORWARD, 
 	RIGHTWARD, 
 	BACKWARD, 
+  FINDLINEY,
 	START, 
 	END
 } COMMAND_TYPE;
@@ -252,7 +253,7 @@ void Vehicle::run()
 			if (GraySensorsUartIoOutput.ioCount) 
 				linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;		// m/s
 #ifdef TestMode1
-			linear_vel_y=0
+			linear_vel_y=0;
 #endif
 			if (current_x - previous_x <= -now_command->len*grid_size)
 				next_command();
@@ -265,6 +266,7 @@ void Vehicle::run()
 			linear_vel_y = 0;   // m/s
 			angular_vel_z = 0;  // rad/s
 			next_command();
+      break; 
 		case END:             //结束
 #ifndef CloseBrake
 			motors.motorsBrake();
@@ -272,6 +274,17 @@ void Vehicle::run()
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s
 			angular_vel_z = 0;  // rad/s
+      break;
+    case FINDLINEY:  // y方向和线对齐  
+      linear_vel_x = 0;  // m/s
+      if (GraySensorsUartIoOutput.ioCount) 
+        linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;   // m/s
+#ifdef TestMode1
+      linear_vel_y=0;
+#endif
+      if (linear_vel_y == 0)
+        next_command();
+      break;
 		default:              //停止
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s
