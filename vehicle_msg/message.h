@@ -5,7 +5,12 @@
 #ifndef _MESSAGE_H_
 #define _MESSAGE_H_
 
-#define DataSerial Serial3
+#include <SoftwareSerial.h>
+
+//#define DataSerial Serial3
+#define rxPin xxx	//软串口rx
+#define txPin xxx	//软串口tx
+SoftwareSerial DataSerial(rxPin, txPin)
 #define DebugSerial Serial
 
 const char serverIP[]="192.168.4.1",cilentIP[]="192.168.4.2";
