@@ -1,7 +1,7 @@
 /************************************
  * 2021-08-26 by csr
  ************************************/
-#define vehicle2
+#define vehicle1  
 #include "vehicle.h"
 
 const float start_x=10,start_y=150; // 设置初始位置，分别表示纠正触发点相对于起始点x和y方向位移

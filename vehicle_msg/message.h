@@ -8,9 +8,9 @@
 #include <SoftwareSerial.h>
 
 //#define DataSerial Serial3
-#define rxPin xxx	//软串口rx
-#define txPin xxx	//软串口tx
-SoftwareSerial DataSerial(rxPin, txPin)
+#define rxPin A9	//软串口rx
+#define txPin A10	//软串口tx
+SoftwareSerial DataSerial(rxPin, txPin);
 #define DebugSerial Serial
 
 const char serverIP[]="192.168.4.1",cilentIP[]="192.168.4.2";
@@ -42,7 +42,7 @@ void Message::clear()
 // 尝试从DataSerial读取str，成功返回true，失败返回false
 bool Message::try_read(char str[])
 {
-	delay(500);
+	delay(1000);
 	int f[20],n=strlen(str);
 	f[0]=-1;
 	for (int i=1,j=-1;i<n;i++)
@@ -85,28 +85,32 @@ void Message::write(char command[],char msg[],bool mode)
 char msg_text[100];
 void Message::server_send(char text[])
 {
-	sprintf(msg_text,"AT+CIPSEND=%d,%d\r\n%s",cilentID,strlen(text),text);
+	sprintf(msg_text,"AT+CIPSEND=%d,%d",cilentID,strlen(text));
 	DebugSerial.print(">>> ");
 	DebugSerial.println(msg_text);
-	write(msg_text,"SEND OK",1);
+	write_once(msg_text);
+  write(text,"SEND OK",0);
 }
 
 // Serial初始化
 void Message::init()
 {
-	DataSerial.begin(115200);
+	//DataSerial.begin(115200);
+  DataSerial.begin(9600);
 	DebugSerial.begin(115200);
 }
 
 // server初始化、连接
 void Message::start_server()
 {
+  //write("AT+RST","OK",1);
 	write("AT+CWMODE_DEF=2","OK",1);
 	write("AT+CWSAP_DEF=\"ZJU21\",\"12345678\",5,3","OK",1);
 	write("AT+RST","OK",1);
 	//for (clear();!try_read("CONNECTED"););
 	write("AT+CIPMUX=1","OK",1);
 	write("AT+CIPSERVER=1,333","OK",1);
+  write("AT+CIPSTO=0","OK",1);
 	for (;!try_read("CONNECT"););
 	DebugSerial.println(">>> ready to move");
 }
@@ -114,14 +118,18 @@ void Message::start_server()
 // cilent初始化、连接，并启动vehicleB
 void Message::start_cilent()
 {
+  //write("AT+RST","OK",1);
 	write("AT+CWMODE_DEF=1","OK",1);
-	write("AT+CWAUTOCONN=0","OK",1);
+	//write("AT+CWAUTOCONN=0","OK",1);
 	DebugSerial.println(">>> CWMODE set");
-	write("AT+CWJAP_DEF=\"ZJU21\",\"12345678\"","CONNECTED",1);
+  //write("AT+RST","OK",1);
+  write("AT+CWQAP","OK",1);
+	write("AT+CWJAP_CUR=\"ZJU21\",\"12345678\"","CONNECTED",1);
 	DebugSerial.println(">>> WiFi connected");
-	write("AT+CIPSTART=\"TCP\",\"192.168.4.1\",333","CONNECTED",0);
+	write("AT+CIPSTART=\"TCP\",\"192.168.4.1\",333,3600","CONNECTED",0);
 	DebugSerial.println(">>> TCP connected");
-	for (clear();!try_read("+IPD,5:START"););
+	for (clear();!try_read("+IPD,5:START");)
+	  delay(100);
 	DebugSerial.println(">>> start moving");
 }
 
