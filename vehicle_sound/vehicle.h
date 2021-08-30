@@ -149,7 +149,10 @@ void Vehicle::start()
 #endif
 #ifdef vehicle2
 	sound.init();
-	msg.init_cilent();
+	msg.init_cilent1();
+	sound.send(_WIFI);
+	msg.init_cilent2();
+	sound.send(_TCP);
 	sound.send(_READY);
 	msg.start_cilent();
 	sound.send(_START);

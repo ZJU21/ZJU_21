@@ -13,12 +13,16 @@ SoftwareSerial SoundSerial(sound_rxPin, sound_txPin);
 typedef enum
 {
 	_TEST,
+	_WIFI,
+	_TCP,
 	_READY,
 	_START,
 } SOUND_TYPE;
 
 const char sounds[][100]={
-	"<G>欢迎使用MR628语音合成模块",
+	"<G>欢迎使用MR628语音合成模块", 
+	"<G>网络已连接",
+	"<G>TCP已连接",
 	"<G>准备出发",
 	"<G>出发"
 };

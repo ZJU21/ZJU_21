@@ -1,7 +1,6 @@
 /************************************
  * 2021-08-27 by csr
  * 2021-08-29 by jyh
- * 目前的调试信息：带有>>>的是运行信息，其他是MsgSerial的信息。所有的MsgSerial信息（不论发送还是返回）都会在DebugSerial同步显示。
  ************************************/
 #ifndef _MESSAGE_H_
 #define _MESSAGE_H_
@@ -12,7 +11,6 @@
 #define msg_rxPin A9	//软串口rx
 #define msg_txPin A10	//软串口tx
 SoftwareSerial MsgSerial(msg_rxPin, msg_txPin);
-#define DebugSerial Serial
 
 const char serverIP[]="192.168.4.1",cilentIP[]="192.168.4.2";
 const int cilentID=0;
@@ -32,7 +30,8 @@ class Message
 		void init();
 		// TODO: char* cilent_receive();
 		void init_server();
-		void init_cilent();
+		void init_cilent1();
+		void init_cilent2();
 		void start_server();
 		void start_cilent();
 };
@@ -58,7 +57,6 @@ bool Message::try_read(char str[])
 	int p=-1;
 	for (char ch=MsgSerial.read();ch>=0;ch=MsgSerial.read())
 	{
-		DebugSerial.print(ch);
 		while (p!=-1 && ch!=str[p+1]) p=f[p];
 		if (str[p+1]==ch) p++;
 		if (p==n-1) return true;
@@ -69,8 +67,6 @@ bool Message::try_read(char str[])
 // 向MsgSerial输出一次command
 void Message::write_once(char command[])
 {
-	DebugSerial.print(">>> try send: ");
-	DebugSerial.println(command);
 	MsgSerial.println(command);
 }
 
@@ -90,8 +86,6 @@ void Message::server_send(char text[])
 {
 	char msg_text[100];
 	sprintf(msg_text,"AT+CIPSEND=%d,%d",cilentID,strlen(text));
-	DebugSerial.print(">>> ");
-	DebugSerial.println(msg_text);
 	write_once(msg_text);
 	write(text,"SEND OK",0);
 }
@@ -101,7 +95,6 @@ void Message::init()
 {
 	//MsgSerial.begin(115200);
 	MsgSerial.begin(9600);
-	DebugSerial.begin(115200);
 }
 
 // server初始化、连接
@@ -116,22 +109,21 @@ void Message::init_server()
 	write("AT+CIPSERVER=1,333","OK",1);
 	write("AT+CIPSTO=0","OK",1);
 	for (;!try_read("CONNECT"););
-	DebugSerial.println(">>> ready to move");
 }
 
 // cilent初始化、连接，并启动vehicleB
-void Message::init_cilent()
+void Message::init_cilent1()
 {
 	//write("AT+RST","OK",1);
 	write("AT+CWMODE_DEF=1","OK",1);
 	//write("AT+CWAUTOCONN=0","OK",1);
-	DebugSerial.println(">>> CWMODE set");
 	//write("AT+RST","OK",1);
 	write("AT+CWQAP","OK",1);
 	write("AT+CWJAP_CUR=\"ZJU21\",\"12345678\"","CONNECTED",1);
-	DebugSerial.println(">>> WiFi connected");
+}
+void Message::init_cilent2()
+{
 	write("AT+CIPSTART=\"TCP\",\"192.168.4.1\",333,3600","CONNECTED",0);
-	DebugSerial.println(">>> TCP connected");
 }
 
 void Message::start_server()
@@ -157,7 +149,6 @@ void Message::start_cilent()
 	//cilent_read();
 	for (clear();!try_read("+IPD,5:START");)
 		delay(100);
-	DebugSerial.println(">>> start moving");
 }
 
 #endif
