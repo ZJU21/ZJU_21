@@ -1,13 +1,7 @@
 /************************************
- * 2021-08-30 by csr
+ * 2021-08-26 by csr
  ************************************/
-#define vehicle2	// 设置车辆编号（vehicle1/vehicle2）
-
-// 多个TestMode可以同时开启
-//#define TestMode1 // 关闭灰度传感器巡线和里程计纠正（用于架空调试）
-//#define TestMode2 // 开机直接启动（用于单车调试）
-//#define CloseBrake // 关闭急停
-
+#define vehicle1
 #include "vehicle.h"
 
 const float start_x=10,start_y=150; // 设置初始位置，分别表示纠正触发点相对于起始点x和y方向位移
@@ -33,7 +27,7 @@ COMMAND commands[]={
 	{BACKWARD,2.5},
 	{PAUSE,3000}, // 装配
 	{RIGHTWARD,2.7},
-	{BACKWARD,2},
+	{BACKWARD,3},
 	{RIGHTWARD,0.4},
 	{END,0}
 };
@@ -65,9 +59,7 @@ void control()
 
 void setup() 
 {
-#ifndef TestMode2
 	vehicle.start();
-#endif
 	vehicle.init(start_x,start_y,commands);
 	FlexiTimer2::set(TIMER_PERIOD, control);  //定时中断函数，TIMER_PERIOD为宏定义
 	FlexiTimer2::start();
@@ -76,9 +68,7 @@ void setup()
 void loop() 
 {
 	if (!vehicle.is_dmp_ready()) return;
-#ifndef TestMode1
-	vehicle.redress_odometry();	// 灰度传感器修正里程计
-#endif
+	//vehicle.redress_odometry();	// 灰度传感器修正里程计
 	vehicle.get_current_status(); // 读取当前状态信息
 	vehicle.run(); // 执行命令
 	vehicle.update_goal_speed();

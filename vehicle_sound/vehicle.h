@@ -1,5 +1,5 @@
 /************************************
- * 2021-08-30 by csr
+ * 2021-08-26 by csr
  ************************************/
 
 #ifndef _VEHICLE_H
@@ -13,6 +13,8 @@
 #include <FlexiTimer2.h>  //定时中断
 #include "message.h"
 #include "sound.h"
+//#define TestMode1 // 关闭灰度传感器巡线和里程计纠正
+//#define CloseBrake // 关闭急停
 
 const float grid_size=300;
 
@@ -23,7 +25,7 @@ typedef enum
 	FORWARD, 
 	RIGHTWARD, 
 	BACKWARD, 
-	FINDLINEY,
+  FINDLINEY,
 	START, 
 	END
 } COMMAND_TYPE;
@@ -38,7 +40,7 @@ class Vehicle
 {
 	//新建通信实例
 	Message msg;
-	//新建语音播报实例
+	//新建通信实例
 	Sound sound;
 	//新建小车陀螺仪实例
 	MPU6050 mpu;
@@ -146,12 +148,13 @@ void Vehicle::start()
 #ifdef vehicle1
 	msg.init_server();
 	msg.start_server();
+	msg.server_send("START");
 #endif
 #ifdef vehicle2
 	sound.init();
-	msg.init_cilent1();
+	msg.init_cilent_WIFI();
 	sound.send(_WIFI);
-	msg.init_cilent2();
+	msg.init_cilent_TCP();
 	sound.send(_TCP);
 	sound.send(_READY);
 	msg.start_cilent();
@@ -280,7 +283,7 @@ void Vehicle::run()
 			linear_vel_y = 0;   // m/s
 			angular_vel_z = 0;  // rad/s
 			next_command();
-			break; 
+      break; 
 		case END:             //结束
 #ifndef CloseBrake
 			motors.motorsBrake();
@@ -288,17 +291,17 @@ void Vehicle::run()
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s
 			angular_vel_z = 0;  // rad/s
-			break;
-		case FINDLINEY:  // y方向和线对齐  
-			linear_vel_x = 0;  // m/s
-			if (GraySensorsUartIoOutput.ioCount) 
-				linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;   // m/s
+      break;
+    case FINDLINEY:  // y方向和线对齐  
+      linear_vel_x = 0;  // m/s
+      if (GraySensorsUartIoOutput.ioCount) 
+        linear_vel_y = -0.005 * GraySensorsUartIoOutput.offset;   // m/s
 #ifdef TestMode1
-			linear_vel_y=0;
+      linear_vel_y=0;
 #endif
-			if (linear_vel_y == 0)
-				next_command();
-			break;
+      if (linear_vel_y == 0)
+        next_command();
+      break;
 		default:              //停止
 			linear_vel_x = 0;   // m/s
 			linear_vel_y = 0;   // m/s

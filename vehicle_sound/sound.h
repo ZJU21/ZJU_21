@@ -2,7 +2,7 @@
  * 2021-08-30 by csr
  ************************************/
 #ifndef _SOUND_H_
-#define _SOUND_H
+#define _SOUND_H_
 
 #include <SoftwareSerial.h>
 
@@ -41,6 +41,7 @@ void Sound::init()
 
 void Sound::send(SOUND_TYPE text)
 {
+	SoundSerial.listen();
 	SoundSerial.print(sounds[text]);
 }
 
