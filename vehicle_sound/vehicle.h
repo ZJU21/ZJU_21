@@ -1,5 +1,5 @@
 /************************************
- * 2021-08-26 by csr
+ * 2021-08-30 by csr
  ************************************/
 
 #ifndef _VEHICLE_H
@@ -13,8 +13,6 @@
 #include <FlexiTimer2.h>  //定时中断
 #include "message.h"
 #include "sound.h"
-//#define TestMode1 // 关闭灰度传感器巡线和里程计纠正（用于架空调试）
-//#define CloseBrake // 关闭急停
 
 const float grid_size=300;
 
