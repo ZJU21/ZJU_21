@@ -32,7 +32,7 @@ class Message
 		void start_server();
 		void start_cilent();
 		int read_color();
-		void send_color(char ch);
+		void send_color(int ch);
 };
 
 // 清空DataSerial的未读信息
@@ -83,7 +83,7 @@ void Message::write(char command[],char msg[],bool mode)
 // server向cilent发送text
 void Message::server_send(char text[])
 {
-char msg_text[20];
+	char msg_text[20];
 	sprintf(msg_text,"AT+CIPSEND=%d,%d",cilentID,strlen(text));
 	write_once(msg_text);
 	write(text,"SEND OK",0);
@@ -141,13 +141,11 @@ int Message::read_color()
 	for (;!try_read("+IPD,7:color="););
 	return MsgSerial.read()-'0';
 }
-void Message::send_color(char ch)
+void Message::send_color(int ch)
 {
 	char msg_text[20];
-	sprintf(msg_text,"AT+CIPSEND=%d,7",cilentID);
-	write_once(msg_text);
-	MsgSerial.print("color=");
-	MsgSerial.println(ch);
+	sprintf(msg_text,"color=%d",ch);
+	server_send(msg_text);
 }
 
 #endif

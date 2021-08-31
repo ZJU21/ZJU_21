@@ -50,7 +50,7 @@ class Vehicle
 	Message msg;
 #ifdef vehicle1
 	//新建相机实例
-	CAMERA cam;
+	Camera cam;
 #else
 	//新建音响实例
 	Sound sound;
@@ -325,14 +325,14 @@ void Vehicle::run()
 		case SCANQR:
 			color=cam.get_QRcode();
 			msg.send_color(color);
-			next_command();
+			//next_command();
 			break;
 #endif
 #ifdef vehicle2
 		case BROADCAST:
 			color=msg.read_color();
 			sound.broadcast(color);
-			next_command();
+			//next_command();
 			break;
 #endif
 		default:              //停止
