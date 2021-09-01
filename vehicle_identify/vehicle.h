@@ -330,7 +330,7 @@ void Vehicle::run()
 			break;
 		case GETA:
 			Position pos=cam.get_Aposition();
-			if (pos.size()>100)
+			if (pos.size>100)
 				next_command();
 			else
 				linear_vel_x=0.2;
@@ -338,7 +338,7 @@ void Vehicle::run()
 			break;
 		case GETB:
 			Position pos=cam.get_Aposition();
-			if (pos.size()>100)
+			if (pos.size>100)
 				next_command();
 			else
 				linear_vel_x=0.2;
