@@ -12,18 +12,22 @@ const float start_x=10,start_y=150; // 设置初始位置，分别表示纠正�
 // 可在vehicle.h的COMMAND_TYPE和run()中添加新的指令
 //   LEFTWARD/RIGHTWARD/BACKWARD/FORWARD: 向左/右/后/前走若干格
 //   PAUSE: 暂停若干秒
+//   SCANQR: 扫码；BROADCAST: 播报（扫码和播报前必须先PAUSE）
 #ifdef vehicle1
 COMMAND commands[]={
 	{START,0},
 	{LEFTWARD,0.45},
 	{FORWARD,1.8},
+	{PAUSE,0},
 	{SCANQR,0}, // 扫码
 	{FORWARD,2.3},
 	{PAUSE,3000}, // 夹取物料A
+	{GETA,0},
 	{FORWARD,1.3},
 	{LEFTWARD,2.8},
 	{FINDLINEY,0},
 	{PAUSE,3000}, // 夹取物料B
+	{GETB,0},
 	{BACKWARD,2.5},
 	{PAUSE,3000}, // 装配
 	{RIGHTWARD,2.7},
@@ -36,7 +40,8 @@ COMMAND commands[]={
 COMMAND commands[]={
   {START,0},
   {RIGHTWARD,3.2},
-  {BROADCAST,12},
+  {PAUSE,0},
+  {BROADCAST,0}, // 播报扫码颜色
   {FINDLINEY,0},
   {FORWARD,2.3},
   {PAUSE,3000},

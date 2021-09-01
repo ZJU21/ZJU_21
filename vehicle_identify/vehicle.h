@@ -33,8 +33,10 @@ typedef enum
 	FINDLINEY,
 	START, 
 	END,
+	SCANQR,
 	BROADCAST,
-	SCANQR
+	GETA,
+	GETB
 } COMMAND_TYPE;
 
 struct COMMAND
@@ -45,7 +47,6 @@ struct COMMAND
 
 class Vehicle
 {
-	int color;
 	//新建通信实例
 	Message msg;
 #ifdef vehicle1
@@ -323,14 +324,32 @@ void Vehicle::run()
 			break;
 #ifdef vehicle1
 		case SCANQR:
-			color=cam.get_QRcode();
+			int color=cam.get_QRcode();
 			msg.send_color(color);
+			next_command();
+			break;
+		case GETA:
+			Position pos=cam.get_Aposition();
+			if (pos.size()>100)
+				next_command();
+			else
+				linear_vel_x=0.2;
+				linear_vel_y=0;
+			break;
+		case GETB:
+			Position pos=cam.get_Aposition();
+			if (pos.size()>100)
+				next_command();
+			else
+				linear_vel_x=0.2;
+				linear_vel_y=0;
+			// 夹取物料B
 			next_command();
 			break;
 #endif
 #ifdef vehicle2
 		case BROADCAST:
-			color=msg.read_color();
+			int color=msg.read_color();
 			sound.broadcast(color);
 			next_command();
 			break;

@@ -74,8 +74,8 @@ void Message::write_once(char command[])
 // mode=1: 失败后重复发送
 void Message::write(char command[],char msg[],bool mode)
 {
-	write_once(command);
-	for (clear();!try_read(msg);)
+	clear();write_once(command);
+	for (;!try_read(msg);)
 		if (!mode)
 			write_once(command);
 }
@@ -143,9 +143,10 @@ int Message::read_color()
 }
 void Message::send_color(int ch)
 {
+	MsgSerial.println("AT+CIPSEND=%d,7",cilentID);
 	char msg_text[20];
 	sprintf(msg_text,"color=%d",ch);
-	server_send(msg_text);
+	MsgSerial.println(msg_text);
 }
 
 #endif
