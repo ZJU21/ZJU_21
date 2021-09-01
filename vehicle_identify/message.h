@@ -143,8 +143,9 @@ int Message::read_color()
 }
 void Message::send_color(int ch)
 {
-	MsgSerial.println("AT+CIPSEND=%d,7",cilentID);
 	char msg_text[20];
+	sprintf(msg_text,"AT+CIPSEND=%d,7",cilentID);
+	MsgSerial.println(msg_text);
 	sprintf(msg_text,"color=%d",ch);
 	MsgSerial.println(msg_text);
 }
