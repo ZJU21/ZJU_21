@@ -329,23 +329,28 @@ void Vehicle::run()
 			next_command();
 			break;
 		case GETA:
+			{
 			Position pos=cam.get_Aposition();
 			if (pos.size>100)
+
 				next_command();
 			else
 				linear_vel_x=0.2;
 				linear_vel_y=0;
 			break;
+			}
 		case GETB:
+			{
 			Position pos=cam.get_Aposition();
 			if (pos.size>100)
+
 				next_command();
 			else
 				linear_vel_x=0.2;
 				linear_vel_y=0;
-			// 夹取物料B
 			next_command();
 			break;
+			}
 #endif
 #ifdef vehicle2
 		case BROADCAST:
