@@ -9,6 +9,7 @@
   - sound.h是gb格式，尽量用记事本打开。在Arduino乱码是正常情况，不要管警告，直接编译/上传。
   - 两车初始化完成后会播报“准备出发”，才能按启动按钮。
 - vehicle_QRcode：增加摄像头模块（camera.h;camera.py），实现扫码和颜色播报
+- vehicle_identify：增加识别模块（camera.h）
 
 ## 流程：
 ### 启动
