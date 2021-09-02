@@ -59,7 +59,7 @@ Position Camera::get_Aposition()
 	clear();
 	Position ans;
 	while (ScanSerial.read()!='A');
-	ans.x=readint();ans.y=readint();ans.size=readint();
+	ans.x=readint()-w/2;ans.y=readint()-h/2;ans.size=readint();
 	return ans;
 }
 
@@ -68,7 +68,7 @@ Position Camera::get_Bposition()
 	clear();
 	Position ans;
 	while (ScanSerial.read()!='B');
-	ans.x=readint();ans.y=readint();ans.size=readint();
+	ans.x=readint()-w/2;ans.y=readint()-h/2;ans.size=readint();
 	return ans;
 }
 
