@@ -6,7 +6,7 @@
 //#define TestMode2 // 直接启动（单车调试）
 //#define CloseBrake // 关闭急停
 
-#define vehicle2
+#define vehicle2                
 
 #include "vehicle.h"
 
@@ -21,35 +21,37 @@ COMMAND commands[] = {
 	{RIGHTWARD, 0.2},
 	{PAUSE, 0},
 	{SCANQR, 0},
-	{PAUSE, 0},
+	{PAUSE, 1000},
 	{LEFTWARD, 0.2},
 	//=====拾取A===
 	{GOX, 4.59},
 	{PAUSE,1000},
 	{GET1,0},
 	{GOX,5.1},
-	{PAUSE,1000},
+	{PAUSE,0},
 	{GET1,0},
 	{GOX,5.6},
-	{PAUSE,1000},
+	{PAUSE,0},
 	{GET1,0},
-	{PAUSE, 0},
+	{PAUSE, 1000},
 	//=====拾取B===
 	{GOX,7.14},
 	{PAUSE,0},
 	{CHANGEDIR,0},
 	{PAUSE,0},
 	{GOY,3.4},
-	{PAUSE,1000},
+	{PAUSE,0},
 	{GET2,0},
+  {PAUSE,1000},
 	{GOY,4},
 	{FINDLINEY,0},
 	{PAUSE,1000},
 	{GET2,0},
+  {PAUSE,1000},
 	{GOY,4.45},
 	{PAUSE,1000},
 	{GET2,0},
-	{PAUSE,0},
+	{PAUSE,1000},
 	//=====装配=====
 	{GOY,4},
 	{GOX,5},
@@ -63,17 +65,22 @@ COMMAND commands[] = {
 const float start_x = 290, start_y = 2250; // 设置初始时刻灰度传感器中点的位置
 COMMAND commands[] = {
 	{START, 0},
-	{RIGHTWARD,2.5},
-	{PAUSE, 0},
-	{BROADCAST,0}, // 播报扫码颜色
-	{FINDLINEY, 0},
-	{GOX, 3},
+  {BROADCAST, 0}, // 播报扫码颜色
+	//{RIGHTWARD, 0.25},
+	//{FINDLINEY, 0},
+  {GOY, 7},
+	{GOX, 4},
+  //{RIGHTWARD, 1},
+  {GOY, 5},
 	{PAUSE, 0},
 	{WORK,0},
-	{LEFTWARD, 2},
-	{FINDLINEY, 0},
-	{BACKWARD, 2},
-	{LEFTWARD, 0.4},
+  {GOY, 7},
+	//{LEFTWARD, 2},
+	//{FINDLINEY, 0},
+  {GOX, 1.2},
+  {GOY, 7.4},
+	//{BACKWARD, 4},
+	//{LEFTWARD, 0.45},
 	{END, 0}};
 #endif
 

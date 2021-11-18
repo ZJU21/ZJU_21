@@ -44,8 +44,8 @@ void Round::stop()
 
 void Round::test()
 {
-  run();
-  stop();
+  //run();
+  //stop();
 }
 
 void Round::init()
@@ -53,8 +53,8 @@ void Round::init()
     protocol.init();        // 通信协议初始化
     uservo1.init();          //舵机角度初始化
     uservo2.init();          //舵机角度初始化
-    uservo1.setSpeed(300);    // 设置转速为20°/s
-    uservo2.setSpeed(300);    // 设置转速为20°/s
+    uservo1.setSpeed(250);    // 设置转速为20°/s
+    uservo2.setSpeed(250);    // 设置转速为20°/s
     test();
 }
 

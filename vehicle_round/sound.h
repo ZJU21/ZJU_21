@@ -4,9 +4,9 @@
 #ifndef _SOUND_H
 #define _SOUND_H
 
-#include <SoftwareSerial.h>
-//#define SoundSerial Serial
-SoftwareSerial SoundSerial(0, 30);
+//#include <SoftwareSerial.h>
+#define SoundSerial Serial3
+//SoftwareSerial SoundSerial(0, 30);
 //#define DebugSerial Serial
 
 typedef enum
